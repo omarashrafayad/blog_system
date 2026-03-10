@@ -12,23 +12,31 @@ function isValidUrl(s: string): boolean {
 }
 
 /** يتحقق أن المقال غير فارغ: كل الحقول مطلوبة وغير فارغة بعد trim */
-function validateCreateInput(input: unknown): { ok: true; data: CreatePostInput } | { ok: false; error: string } {
+/** يتحقق أن المقال غير فارغ: كل الحقول مطلوبة وغير فارغة بعد trim */
+function validateCreateInput(input: unknown, filePath?: string): { ok: true; data: CreatePostInput } | { ok: false; error: string } {
   if (!input || typeof input !== 'object') {
-    return { ok: false, error: 'المقال يجب أن يحتوي على: title, description, content, headerImage, author (غير فارغة)' };
+    return { ok: false, error: 'المقال يجب أن يحتوي على: title, description, content, author (غير فارغة)' };
   }
   const o = input as Record<string, unknown>;
   const title = typeof o.title === 'string' ? o.title.trim() : '';
   const description = typeof o.description === 'string' ? o.description.trim() : '';
   const content = typeof o.content === 'string' ? o.content.trim() : '';
-  const headerImage = typeof o.headerImage === 'string' ? o.headerImage.trim() : '';
   const author = typeof o.author === 'string' ? o.author.trim() : '';
+
+  // If filePath is provided, use it, otherwise check body
+  let headerImage = filePath || (typeof o.headerImage === 'string' ? o.headerImage.trim() : '');
 
   if (!title) return { ok: false, error: 'العنوان مطلوب ولا يمكن أن يكون فارغاً' };
   if (title.length < 5) return { ok: false, error: 'العنوان يجب أن يكون 5 أحرف على الأقل' };
   if (!description) return { ok: false, error: 'الوصف مطلوب ولا يمكن أن يكون فارغاً' };
   if (!content) return { ok: false, error: 'المحتوى مطلوب ولا يمكن أن يكون فارغاً' };
-  if (!headerImage) return { ok: false, error: 'رابط صورة الغلاف مطلوب' };
-  if (!isValidUrl(headerImage)) return { ok: false, error: 'رابط صورة الغلاف يجب أن يكون رابطاً صحيحاً' };
+  if (!headerImage) return { ok: false, error: 'رابط صورة الغلاف أو ملف الصورة مطلوب' };
+
+  // If it's not a local file path (doesn't start with uploads/), validate as URL
+  if (!filePath && !isValidUrl(headerImage)) {
+    return { ok: false, error: 'رابط صورة الغلاف يجب أن يكون رابطاً صحيحاً' };
+  }
+
   if (!author) return { ok: false, error: 'اسم الكاتب مطلوب ولا يمكن أن يكون فارغاً' };
 
   return {
@@ -40,7 +48,16 @@ function validateCreateInput(input: unknown): { ok: true; data: CreatePostInput 
 export async function getAllPosts(_req: Request, res: Response): Promise<void> {
   try {
     const posts = await postsModel.getAllPosts();
-    res.json(posts);
+    // Convert relative paths to absolute URLs if needed
+    const host = _req.get('host');
+    const protocol = _req.protocol;
+    const formattedPosts = posts.map(post => ({
+      ...post,
+      headerImage: post.headerImage.startsWith('uploads')
+        ? `${protocol}://${host}/${post.headerImage.replace(/\\/g, '/')}`
+        : post.headerImage
+    }));
+    res.json(formattedPosts);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch posts' });
   }
@@ -54,14 +71,24 @@ export async function getPostById(req: Request, res: Response): Promise<void> {
       res.status(404).json({ error: 'Post not found' });
       return;
     }
-    res.json(post);
+    const host = req.get('host');
+    const protocol = req.protocol;
+    const formattedPost = {
+      ...post,
+      headerImage: post.headerImage.startsWith('uploads')
+        ? `${protocol}://${host}/${post.headerImage.replace(/\\/g, '/')}`
+        : post.headerImage
+    };
+    res.json(formattedPost);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch post' });
   }
 }
 
 export async function createPost(req: Request, res: Response): Promise<void> {
-  const result = validateCreateInput(req.body);
+  const filePath = req.file ? req.file.path : undefined;
+  const result = validateCreateInput(req.body, filePath);
+
   if (!result.ok) {
     res.status(400).json({ error: result.error });
     return;
@@ -101,6 +128,11 @@ export async function updatePost(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   const input = req.body as UpdatePostInput;
   const updates: UpdatePostInput = {};
+
+  if (req.file) {
+    updates.headerImage = req.file.path;
+  }
+
   if (input.title !== undefined) {
     const t = String(input.title).trim();
     if (!t) {
@@ -129,15 +161,13 @@ export async function updatePost(req: Request, res: Response): Promise<void> {
     }
     updates.content = c;
   }
-  if (input.headerImage !== undefined) {
+  if (input.headerImage !== undefined && !req.file) {
     const h = String(input.headerImage).trim();
     if (!h) {
       res.status(400).json({ error: 'رابط الصورة لا يمكن أن يكون فارغاً' });
       return;
     }
-    try {
-      new URL(h);
-    } catch {
+    if (!h.startsWith('uploads') && !isValidUrl(h)) {
       res.status(400).json({ error: 'رابط الصورة غير صحيح' });
       return;
     }

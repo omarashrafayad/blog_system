@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createPosts } from '@/services/posts';
+import { useBulkCreatePosts } from '@/hooks';
 import type { CreatePostInput } from '@/types/post';
 
 const example: CreatePostInput[] = [
@@ -24,23 +23,26 @@ const example: CreatePostInput[] = [
 ];
 
 export function BulkCreateForm() {
-  const queryClient = useQueryClient();
   const [json, setJson] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: createPosts,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      setJson('');
-      setParseError(null);
-      alert(`${data.length} post(s) created.`);
-    },
-    onError: (err: { response?: { data?: { error?: string } } }) => {
-      const msg = err.response?.data?.error ?? 'Request failed. Check the data format (each post must be non-empty).';
-      setParseError(msg);
-    },
-  });
+  const mutation = useBulkCreatePosts();
+
+  // Handling onSuccess/onError manually to keep existing specific logic
+  const originalOnSuccess = mutation.mutate;
+  const handleBulkSubmit = (arr: CreatePostInput[]) => {
+    mutation.mutate(arr, {
+      onSuccess: (data) => {
+        setJson('');
+        setParseError(null);
+        alert(`${data.length} post(s) created.`);
+      },
+      onError: (err: any) => {
+        const msg = err.response?.data?.error ?? 'Request failed. Check the data format (each post must be non-empty).';
+        setParseError(msg);
+      },
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +58,7 @@ export function BulkCreateForm() {
       setParseError('Value must be a non-empty array of posts (each: title, description, content, headerImage, author).');
       return;
     }
-    mutation.mutate(arr as CreatePostInput[]);
+    handleBulkSubmit(arr as CreatePostInput[]);
   };
 
   return (

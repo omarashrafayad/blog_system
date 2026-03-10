@@ -2,19 +2,14 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { fetchPostById } from '@/services/posts';
+import { usePost } from '@/hooks';
 import { EditPostForm } from '@/components/EditPostForm';
 
 export default function EditPostPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { data: post, isLoading, error } = useQuery({
-    queryKey: ['posts', id],
-    queryFn: () => fetchPostById(id),
-    enabled: !!id,
-  });
+  const { data: post, isLoading, error } = usePost(id);
 
   if (isLoading) {
     return (

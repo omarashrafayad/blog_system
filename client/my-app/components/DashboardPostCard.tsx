@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deletePost } from '@/services/posts';
+import { useDeletePost } from '@/hooks';
 import type { Post } from '@/types/post';
 import { Edit3, Trash2, Eye, Calendar, User } from 'lucide-react';
 
@@ -11,11 +10,7 @@ interface DashboardPostCardProps {
 }
 
 export function DashboardPostCard({ post }: DashboardPostCardProps) {
-  const queryClient = useQueryClient();
-  const deleteMutation = useMutation({
-    mutationFn: () => deletePost(post.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts'] }),
-  });
+  const deleteMutation = useDeletePost();
 
   const date = new Date(post.createdAt).toLocaleDateString('en-US', {
     month: 'short',
@@ -25,7 +20,7 @@ export function DashboardPostCard({ post }: DashboardPostCardProps) {
 
   const handleDelete = () => {
     if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this story forever?')) {
-      deleteMutation.mutate();
+      deleteMutation.mutate(post.id);
     }
   };
 

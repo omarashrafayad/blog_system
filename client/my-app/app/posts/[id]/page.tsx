@@ -2,19 +2,14 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { fetchPostById } from '@/services/posts';
+import { usePost } from '@/hooks';
 import { ArrowLeft, Calendar, User, Clock, Share2, Bookmark } from 'lucide-react';
 
 export default function SinglePostPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { data: post, isLoading, error } = useQuery({
-    queryKey: ['posts', id],
-    queryFn: () => fetchPostById(id),
-    enabled: !!id,
-  });
+  const { data: post, isLoading, error } = usePost(id);
 
   if (isLoading) {
     return (

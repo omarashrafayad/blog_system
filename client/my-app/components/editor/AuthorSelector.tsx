@@ -1,7 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllAuthors, createAuthor } from '@/services/authors';
+import { useAuthors, useCreateAuthor } from '@/hooks';
 import { useState } from 'react';
 import { Plus, User, Check } from 'lucide-react';
 
@@ -11,24 +10,23 @@ interface AuthorSelectorProps {
 }
 
 export function AuthorSelector({ value, onChange }: AuthorSelectorProps) {
-    const queryClient = useQueryClient();
     const [isAdding, setIsAdding] = useState(false);
     const [newName, setNewName] = useState('');
 
-    const { data: authors = [], isLoading } = useQuery({
-        queryKey: ['authors'],
-        queryFn: getAllAuthors,
-    });
+    const { data: authors = [], isLoading } = useAuthors();
 
-    const mutation = useMutation({
-        mutationFn: createAuthor,
-        onSuccess: (newAuthor) => {
-            queryClient.invalidateQueries({ queryKey: ['authors'] });
-            onChange(newAuthor.name); // Using name for now as the Post model expects a string
-            setIsAdding(false);
-            setNewName('');
-        },
-    });
+    const mutation = useCreateAuthor();
+
+    // Specific logic for AuthorSelector onSuccess
+    const handleAddAuthor = (name: string) => {
+        mutation.mutate({ name }, {
+            onSuccess: (newAuthor) => {
+                onChange(newAuthor.name); // Using name for now as the Post model expects a string
+                setIsAdding(false);
+                setNewName('');
+            }
+        });
+    };
 
     if (isLoading) return <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />;
 
@@ -42,8 +40,8 @@ export function AuthorSelector({ value, onChange }: AuthorSelectorProps) {
                         type="button"
                         onClick={() => onChange(author.name)}
                         className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${value === author.name
-                                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                : 'border-border bg-card hover:border-primary/50'
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                            : 'border-border bg-card hover:border-primary/50'
                             }`}
                     >
                         <div className={`flex h-10 w-10 items-center justify-center rounded-full ${value === author.name ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
@@ -76,13 +74,13 @@ export function AuthorSelector({ value, onChange }: AuthorSelectorProps) {
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') mutation.mutate({ name: newName });
+                                if (e.key === 'Enter') handleAddAuthor(newName);
                                 if (e.key === 'Escape') setIsAdding(false);
                             }}
                         />
                         <button
                             type="button"
-                            onClick={() => mutation.mutate({ name: newName })}
+                            onClick={() => handleAddAuthor(newName)}
                             disabled={!newName || mutation.isPending}
                             className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
                         >

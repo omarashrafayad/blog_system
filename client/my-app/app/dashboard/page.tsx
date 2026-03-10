@@ -1,16 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { fetchPosts } from '@/services/posts';
+import { usePosts } from '@/hooks';
 import { DashboardPostCard } from '@/components/DashboardPostCard';
 import { Plus, Boxes, BarChart3, Settings } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { data: posts, isLoading, error } = useQuery({
-    queryKey: ['posts'],
-    queryFn: fetchPosts,
-  });
+  const { data: posts, isLoading, error } = usePosts();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 animate-in fade-in duration-700">

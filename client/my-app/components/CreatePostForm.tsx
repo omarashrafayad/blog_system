@@ -3,30 +3,38 @@
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createPost } from '@/services/posts';
+import { useCreatePost } from '@/hooks';
 import { createPostSchema, type CreatePostFormData } from '@/lib/validations/post';
 import { RichTextEditor } from './editor/RichTextEditor';
 import { AuthorSelector } from './editor/AuthorSelector';
-import { ArrowLeft, Rocket, Image as ImageIcon, Layout, Type } from 'lucide-react';
+import { ImageUpload } from './editor/ImageUpload';
+import { ArrowLeft, Rocket, Layout, Type } from 'lucide-react';
 import Link from 'next/link';
 
 export function CreatePostForm() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: createPost,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      router.push('/dashboard');
-    },
-  });
+  const mutation = useCreatePost();
 
   const { control, register, handleSubmit, formState: { errors } } = useForm<CreatePostFormData>({
     resolver: zodResolver(createPostSchema),
-    defaultValues: { title: '', description: '', content: '', headerImage: '', author: '' },
+    defaultValues: { title: '', description: '', content: '', author: '' },
   });
+
+  const onSubmit = (data: CreatePostFormData) => {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('description', data.description);
+    formData.append('content', data.content);
+    formData.append('author', data.author);
+
+    if (data.headerImage instanceof File) {
+      formData.append('headerImage', data.headerImage);
+    } else if (typeof data.headerImage === 'string') {
+      formData.append('headerImage', data.headerImage);
+    }
+
+    mutation.mutate(formData);
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -44,7 +52,7 @@ export function CreatePostForm() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-10">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {/* Main Content Area */}
           <div className="space-y-6">
@@ -80,26 +88,17 @@ export function CreatePostForm() {
 
           {/* Metadata Section */}
           <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-primary">
-                <ImageIcon size={18} />
-                <label htmlFor="headerImage" className="text-sm font-semibold tracking-tight">Header Image</label>
-              </div>
-              <div className="relative">
-                <input
-                  id="headerImage"
-                  {...register('headerImage')}
-                  type="url"
-                  className="w-full rounded-2xl border-none bg-muted/50 px-5 py-4 pl-12 outline-none ring-1 ring-border focus:bg-card focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/30 shadow-inner"
-                  placeholder="https://images.unsplash.com/..."
+            <Controller
+              name="headerImage"
+              control={control}
+              render={({ field }) => (
+                <ImageUpload
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.headerImage?.message as string}
                 />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50">
-                  <ImageIcon size={20} />
-                </div>
-              </div>
-              {errors.headerImage && <p className="text-xs font-medium text-destructive px-2">{errors.headerImage.message}</p>}
-              <p className="text-[10px] text-muted-foreground px-2 italic">Tip: Use high-quality Unsplash URLs for better visuals.</p>
-            </div>
+              )}
+            />
 
             <Controller
               name="author"

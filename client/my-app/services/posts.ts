@@ -11,8 +11,11 @@ export async function fetchPostById(id: string): Promise<Post> {
   return data;
 }
 
-export async function createPost(input: CreatePostInput): Promise<Post> {
-  const { data } = await api.post<Post>('/posts', input);
+export async function createPost(input: CreatePostInput | FormData): Promise<Post> {
+  const isFormData = input instanceof FormData;
+  const { data } = await api.post<Post>('/posts', input, {
+    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  });
   return data;
 }
 
@@ -21,8 +24,11 @@ export async function createPosts(posts: CreatePostInput[]): Promise<Post[]> {
   return data;
 }
 
-export async function updatePost(id: string, input: UpdatePostInput): Promise<Post> {
-  const { data } = await api.put<Post>(`/posts/${id}`, input);
+export async function updatePost(id: string, input: UpdatePostInput | FormData): Promise<Post> {
+  const isFormData = input instanceof FormData;
+  const { data } = await api.put<Post>(`/posts/${id}`, input, {
+    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  });
   return data;
 }
 

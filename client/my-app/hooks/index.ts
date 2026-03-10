@@ -1,1 +1,2 @@
-// Re-export custom hooks when needed.
+export * from './usePosts';
+export * from './useAuthors';
