@@ -1,8 +1,6 @@
-import axios from 'axios';
+import { api } from '@/lib/axios';
 
-const api = axios.create({
-    baseURL: 'http://localhost:5000',
-});
+
 
 export interface Author {
     id: string;

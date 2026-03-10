@@ -19,8 +19,13 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-connectDb().catch((err) => {
-  console.error("Database connection failed:", err);
-});
-
-export default app;
+connectDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Database connection failed:', err);
+    process.exit(1);
+  });

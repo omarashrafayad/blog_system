@@ -7,6 +7,6 @@ if (!DATABASE) {
 }
 
 export async function connectDb(): Promise<void> {
-  await mongoose.connect(DATABASE);
+  await mongoose.connect(DATABASE!);
   console.log('MongoDB connected');
 }
