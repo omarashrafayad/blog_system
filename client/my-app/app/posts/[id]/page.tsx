@@ -80,28 +80,48 @@ export default function SinglePostPage() {
 
           <div className="flex items-center justify-between border-y border-border py-6">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden">
                 <User size={24} />
               </div>
               <div>
-                <p className="font-bold text-foreground">{post.author}</p>
+                <p className="font-bold text-foreground capitalize">{post.author}</p>
                 <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   <Calendar size={12} />
                   <time dateTime={post.createdAt}>{date}</time>
                 </div>
               </div>
             </div>
+
+            <div className="flex items-center gap-3">
+              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-border transition-all hover:border-primary hover:text-primary active:scale-90">
+                <Share2 size={18} />
+              </button>
+              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-border transition-all hover:border-primary hover:text-primary active:scale-90">
+                <Bookmark size={18} />
+              </button>
+            </div>
           </div>
         </header>
 
+        {post.description && (
+          <p className="text-xl font-medium leading-relaxed text-muted-foreground mb-12 italic border-l-4 border-primary/20 pl-6 py-2">
+            {post.description}
+          </p>
+        )}
         <div className="mt-20 border-t border-border pt-10">
           <h2 className="text-2xl font-bold mb-6 italic text-center">"Every story matters."</h2>
           <div className="flex items-center justify-center gap-4">
             <div className="h-px flex-1 bg-border" />
             <div className="flex gap-4">
-              <div className="h-10 w-10 rounded-full bg-muted" />
-              <div className="h-10 w-10 rounded-full bg-muted" />
-              <div className="h-10 w-10 rounded-full bg-muted" />
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-colors cursor-pointer">
+                <Share2 size={16} />
+              </div>
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-colors cursor-pointer text-xs font-bold">
+                FB
+              </div>
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-colors cursor-pointer text-xs font-bold">
+                TW
+              </div>
             </div>
             <div className="h-px flex-1 bg-border" />
           </div>
